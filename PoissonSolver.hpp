@@ -21,6 +21,7 @@ public:
     Size sizeImage;
     cv::Mat domainMask;
     Eigen::MatrixXd solve(std::function<double(Point)>, std::function<double(Point, Point)>);
+    void compute();
     PoissonSolver(): sizeImage(Size(0, 0)) {}
 private:
     unsigned int numNeighbors(Point);
