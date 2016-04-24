@@ -11,7 +11,6 @@
 #include "Clone.hpp"
 #include <opencv2/core/eigen.hpp>
 #include <ctime>
-#include "CannyDetector.hpp"
 
 #define IMPORT "import"
 #define MIXED "mixed"
@@ -24,7 +23,7 @@ int main(int argc, const char * argv[]) {
         return -1;
     }
     std::string mode = argv[1];
-    cv::Mat outputChannels[3];
+    cv::Mat output;
     clock_t t1, t2, t = 0;
     if (mode == FLATTEN) {
         if (argc < 3) {
@@ -44,29 +43,18 @@ int main(int argc, const char * argv[]) {
             return 0;
         }
         std::cout << "Processing Image..." << std::endl;
-        cv::Mat channel;
-        cv::Mat srcChannels[3];
-        cv::split(src, srcChannels);
-        Eigen::MatrixXd source;
-        cv::Mat sourceEdge = cannyDetector(src);
-        for (int i = 0; i < 3; i++) {
-            std::cout << "Cloning channel: " << i + 1 << std::endl;
-            t1 = clock();
-            srcChannels[i].convertTo(channel, CV_64FC1);
-            cv::cv2eigen(channel, source);
-            cv::eigen2cv(flatten(source, sourceEdge, domain, domainMask), channel);
-            channel.convertTo(outputChannels[i], CV_8UC1);
-            t2 = clock();
-            t += (t2 - t1);
-            std::cout << "Time taken: " << (float)(t2 - t1) / CLOCKS_PER_SEC << " seconds" << std::endl;
-        }
+        t1 = clock();
+        output = flatten(src, domain, domainMask);
+        t2 = clock();
+        t = (t2 - t1);
+
     } else {
         if (mode == IMPORT || mode == MIXED) {
             if (argc < 4) {
                 std::cout << "Usage: " << argv[0] << "<'import' or 'mixed'> <source> <destination>" << std::endl;
                 return -1;
             }
-            cv::Mat src, dest, output;
+            cv::Mat src, dest;
             src = cv::imread(argv[2], cv::IMREAD_COLOR);
             dest = cv::imread(argv[3], cv::IMREAD_COLOR);
             
@@ -82,35 +70,19 @@ int main(int argc, const char * argv[]) {
             cv::Mat domainMask = std::get<1>(editInfo);
             Point translation = std::get<2>(editInfo);
             std::cout << "Processing Image..." << std::endl;
-            cv::Mat channel;
-            cv::Mat srcChannels[3], destChannels[3];
-            cv::split(src, srcChannels);
-            cv::split(dest, destChannels);
-            Eigen::MatrixXd source, destination;
-            for (int i = 0; i < 3; i++) {
-                std::cout << "Cloning channel: " << i + 1 << std::endl;
-                t1 = clock();
-                srcChannels[i].convertTo(channel, CV_64FC1);
-                cv::cv2eigen(channel, source);
-                destChannels[i].convertTo(channel, CV_64FC1);
-                cv::cv2eigen(channel, destination);
-                if (mode == MIXED) {
-                    cv::eigen2cv(cloneMixedGrad(source, destination, domain, domainMask, translation), channel);
-                } else {
-                    cv::eigen2cv(cloneImportedGrad(source, destination, domain, domainMask, translation), channel);
-                }
-                channel.convertTo(outputChannels[i], CV_8UC1);
-                t2 = clock();
-                t += (t2 - t1);
-                std::cout << "Time taken: " << (float)(t2 - t1) / CLOCKS_PER_SEC << " seconds" << std::endl;
+            t1 = clock();
+            if (mode == MIXED) {
+                output = cloneMixedGrad(src, dest, domain, domainMask, translation);
+            } else {
+                output = cloneImportedGrad(src, dest, domain, domainMask, translation);
             }
+            t2 = clock();
+            t = (t2 - t1);
         } else {
             std::cout << "Mode not recognised" << std::endl;
             return -1;
         }
     }
-    cv::Mat output;
-    cv::merge(outputChannels, 3, output);
     cv::namedWindow("output", cv::WINDOW_NORMAL);
     cv::imshow("output", output);
     std::cout << "Done. Total Time: " << (float)t / CLOCKS_PER_SEC << " seconds" << std::endl;
