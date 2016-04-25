@@ -8,11 +8,16 @@
 
 #include "PoissonSolver.hpp"
 #include <Eigen/Sparse>
-#include <Eigen/UmfPackSupport>
 #include <vector>
-//#include <iostream>
+#include <iostream>
 
-Eigen::UmfPackLU<Eigen::SparseMatrix<double>> solver;
+PoissonSolver::PoissonSolver(std::set<Point> domain, Size sizeImage, cv::Mat domainMask) {
+    Eigen::SparseMatrix<double, Eigen::ColMajor> A;
+    this->domain = domain;
+    this->sizeImage = sizeImage;
+    this->domainMask = domainMask;
+    std::cout << "Number of pixels in domain: " << domain.size() << std::endl;
+}
 
 unsigned int PoissonSolver::numNeighbors(Point p) {
     unsigned int numNeighbors = 4;
@@ -63,9 +68,7 @@ void PoissonSolver::compute() {
         }
     }
     A.setFromTriplets(coefficients.begin(), coefficients.end());
-//    Eigen::UmfPackLU<Eigen::SparseMatrix<double>> solver;
     solver.compute(A);
-    //std::cout << "computed" << std::endl;
 }
 
 Eigen::MatrixXd PoissonSolver::solve(std::function<double(Point)> dirichlet, std::function<double(Point, Point)> guidance) {

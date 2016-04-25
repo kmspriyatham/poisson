@@ -11,6 +11,7 @@
 
 #include <set>
 #include <Eigen/Dense>
+#include <Eigen/SparseCholesky>
 #include "Point.hpp"
 #include "Size.hpp"
 #include <opencv2/core/core.hpp>
@@ -22,10 +23,11 @@ public:
     cv::Mat domainMask;
     Eigen::MatrixXd solve(std::function<double(Point)>, std::function<double(Point, Point)>);
     void compute();
-    PoissonSolver(): sizeImage(Size(0, 0)) {}
+    PoissonSolver(std::set<Point>, Size, cv::Mat);
 private:
     unsigned int numNeighbors(Point);
     std::set<Point> neighbors(Point);
+    Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver;
 };
 
 #endif /* PoissonSolver_hpp */

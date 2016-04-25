@@ -17,11 +17,7 @@ cv::Mat cloneImportedGrad(cv::Mat src, cv::Mat dest, std::set<Point> domain, cv:
     cv::split(src, srcChannels);
     cv::split(dest, destChannels);
     Eigen::MatrixXd source, destination;
-    PoissonSolver poissonSolver = PoissonSolver();
-    poissonSolver.domain = domain;
-    poissonSolver.domainMask = domainMask;
-    poissonSolver.sizeImage.width = (unsigned int) src.cols;
-    poissonSolver.sizeImage.height = (unsigned int) src.rows;
+    PoissonSolver poissonSolver{domain, Size(src.rows, src.cols), domainMask};
     poissonSolver.compute();
     for (int i = 0; i < 3; i++) {
         srcChannels[i].convertTo(channel, CV_64FC1);
@@ -58,11 +54,7 @@ cv::Mat cloneMixedGrad(cv::Mat src, cv::Mat dest, std::set<Point> domain, cv::Ma
     cv::split(src, srcChannels);
     cv::split(dest, destChannels);
     Eigen::MatrixXd source, destination;
-    PoissonSolver poissonSolver = PoissonSolver();
-    poissonSolver.domain = domain;
-    poissonSolver.domainMask = domainMask;
-    poissonSolver.sizeImage.width = (unsigned int) src.cols;
-    poissonSolver.sizeImage.height = (unsigned int) src.rows;
+    PoissonSolver poissonSolver{domain, Size(src.rows, src.cols), domainMask};
     poissonSolver.compute();
     for (int i = 0; i < 3; i++) {
         srcChannels[i].convertTo(channel, CV_64FC1);
@@ -101,11 +93,7 @@ cv::Mat flatten(cv::Mat src, std::set<Point> domain, cv::Mat domainMask) {
     cv::split(src, srcChannels);
     Eigen::MatrixXd source;
     cv::Mat srcEdge = cannyDetector(src);
-    PoissonSolver poissonSolver = PoissonSolver();
-    poissonSolver.domain = domain;
-    poissonSolver.domainMask = domainMask;
-    poissonSolver.sizeImage.width = (unsigned int) src.cols;
-    poissonSolver.sizeImage.height = (unsigned int) src.rows;
+    PoissonSolver poissonSolver{domain, Size(src.rows, src.cols), domainMask};
     poissonSolver.compute();
     for (int i = 0; i < 3; i++) {
         srcChannels[i].convertTo(channel, CV_64FC1);
