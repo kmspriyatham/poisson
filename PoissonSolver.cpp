@@ -2,9 +2,6 @@
 //  PoissonSolver.cpp
 //  poisson
 //
-//  Created by Priyatham Kattakinda on 19/04/16.
-//  Copyright © 2016 Priyatham Kattakinda. All rights reserved.
-//
 
 #include "PoissonSolver.hpp"
 #include <Eigen/Sparse>
@@ -19,6 +16,7 @@ PoissonSolver::PoissonSolver(std::set<Point> domain, Size sizeImage, cv::Mat dom
     std::cout << "Number of pixels in domain: " << domain.size() << std::endl;
 }
 
+// return the number of neighbors of a point.
 unsigned int PoissonSolver::numNeighbors(Point p) {
     unsigned int numNeighbors = 4;
     if (p.x == sizeImage.width - 1 || p.x == 0) {
@@ -30,6 +28,7 @@ unsigned int PoissonSolver::numNeighbors(Point p) {
     return numNeighbors;
 }
 
+// return the neighbors of a point.
 std::set<Point> PoissonSolver::neighbors(Point p) {
     std::set<Point> neighbors;
     if (p.x != 0) {
@@ -47,11 +46,13 @@ std::set<Point> PoissonSolver::neighbors(Point p) {
     return neighbors;
 }
 
+// the discretized poisson equation is a linear system (Ax = b, say).
+// compute() computes A and performs LDLT decomposition of A.
 void PoissonSolver::compute() {
     unsigned int n = (unsigned int) domain.size();
     Eigen::SparseMatrix<double, Eigen::ColMajor> A(n, n);
     A.reserve(4 * n);
-    std::vector<Eigen::Triplet<double>> coefficients;
+    std::vector<Eigen::Triplet<double>> coefficients; // vector of triplets of the form (i, j, A(i, j))
     coefficients.reserve(4 * n);
     {
         int i = 0;
@@ -61,7 +62,7 @@ void PoissonSolver::compute() {
             std::set<Point> pNeighbors = neighbors(*p);
             for (std::set<Point>::iterator q = pNeighbors.begin(); q != pNeighbors.end(); q++) {
                 index = domainMask.at<int>(q->y, q->x);
-                if (index != -1) {
+                if (index != -1) { // neighbor is in domain
                     coefficients.push_back(Eigen::Triplet<double>(i, index, -1));
                 }
             }
@@ -71,6 +72,7 @@ void PoissonSolver::compute() {
     solver.compute(A);
 }
 
+// solve for x using the decomposition of A. A is same for all the channels, only b changes.
 Eigen::MatrixXd PoissonSolver::solve(std::function<double(Point)> dirichlet, std::function<double(Point, Point)> guidance) {
     unsigned int n = (unsigned int) domain.size();
     Eigen::MatrixXd b(n, 1), x(n, 1);
@@ -83,7 +85,7 @@ Eigen::MatrixXd PoissonSolver::solve(std::function<double(Point)> dirichlet, std
             std::set<Point> pNeighbors = neighbors(*p);
             for (std::set<Point>::iterator q = pNeighbors.begin(); q != pNeighbors.end(); q++) {
                 index = domainMask.at<int>(q->y, q->x);
-                if (index == -1) {
+                if (index == -1) { // neighbor is not in domain
                     b(i, 0) += dirichlet(*q);
                 }
             }

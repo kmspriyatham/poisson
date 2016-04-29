@@ -2,13 +2,11 @@
 //  CannyDetector.cpp
 //  poisson
 //
-//  Created by Priyatham Kattakinda on 22/04/16.
-//  Copyright © 2016 Priyatham Kattakinda. All rights reserved.
-//
 
 #include "CannyDetector.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 
+// edge detector
 cv::Mat cannyDetector(cv::Mat src) {
     cv::Mat srcGray, srcEdge;
     cv::cvtColor(src, srcGray, CV_BGR2GRAY);

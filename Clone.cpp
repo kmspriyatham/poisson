@@ -2,15 +2,13 @@
 //  Clone.cpp
 //  poisson
 //
-//  Created by Priyatham Kattakinda on 19/04/16.
-//  Copyright © 2016 Priyatham Kattakinda. All rights reserved.
-//
 
 #include "Clone.hpp"
 #include "PoissonSolver.hpp"
 #include "CannyDetector.hpp"
 #include <opencv2/core/eigen.hpp>
 
+// apply the imported gradient method for seamless cloning.
 cv::Mat cloneImportedGrad(cv::Mat src, cv::Mat dest, std::set<Point> domain, cv::Mat domainMask, Point translation) {
     cv::Mat channel;
     cv::Mat srcChannels[3], destChannels[3], outputChannels[3];
@@ -19,10 +17,10 @@ cv::Mat cloneImportedGrad(cv::Mat src, cv::Mat dest, std::set<Point> domain, cv:
     Eigen::MatrixXd source, destination;
     PoissonSolver poissonSolver{domain, Size(src.rows, src.cols), domainMask};
     poissonSolver.compute();
-    for (int i = 0; i < 3; i++) {
-        srcChannels[i].convertTo(channel, CV_64FC1);
+    for (int i = 0; i < 3; i++) { // for each channel
+        srcChannels[i].convertTo(channel, CV_64FC1); // convert to double
         cv::cv2eigen(channel, source);
-        destChannels[i].convertTo(channel, CV_64FC1);
+        destChannels[i].convertTo(channel, CV_64FC1); // convert to double
         cv::cv2eigen(channel, destination);
         std::function<double(Point)> dirichlet = [destination] (Point p)->double {
             return destination(p.y, p.x);
@@ -32,6 +30,7 @@ cv::Mat cloneImportedGrad(cv::Mat src, cv::Mat dest, std::set<Point> domain, cv:
             p.y += translation.y;
             q.x += translation.x;
             q.y += translation.y;
+            // return the gradient from source image.
             return source(p.y, p.x) - source(q.y, q.x);
         };
         Eigen::MatrixXd x = poissonSolver.solve(dirichlet, guidance);
@@ -41,13 +40,14 @@ cv::Mat cloneImportedGrad(cv::Mat src, cv::Mat dest, std::set<Point> domain, cv:
                 channel.at<double>(p->y, p->x) = x(i, 0);
             }
         }
-        channel.convertTo(outputChannels[i], CV_8UC1);
+        channel.convertTo(outputChannels[i], CV_8UC1); // convert to uint8_t
     }
     cv::Mat output;
     cv::merge(outputChannels, 3, output);
     return output;
 }
 
+//apply the mixed gradient method for seamless cloning.
 cv::Mat cloneMixedGrad(cv::Mat src, cv::Mat dest, std::set<Point> domain, cv::Mat domainMask, Point translation) {
     cv::Mat channel;
     cv::Mat srcChannels[3], destChannels[3], outputChannels[3];
@@ -56,10 +56,10 @@ cv::Mat cloneMixedGrad(cv::Mat src, cv::Mat dest, std::set<Point> domain, cv::Ma
     Eigen::MatrixXd source, destination;
     PoissonSolver poissonSolver{domain, Size(src.rows, src.cols), domainMask};
     poissonSolver.compute();
-    for (int i = 0; i < 3; i++) {
-        srcChannels[i].convertTo(channel, CV_64FC1);
+    for (int i = 0; i < 3; i++) { // for each channel
+        srcChannels[i].convertTo(channel, CV_64FC1); // convert to double
         cv::cv2eigen(channel, source);
-        destChannels[i].convertTo(channel, CV_64FC1);
+        destChannels[i].convertTo(channel, CV_64FC1); // convert to double
         cv::cv2eigen(channel, destination);
         std::function<double(Point)> dirichlet = [destination] (Point p)->double {
             return destination(p.y, p.x);
@@ -71,6 +71,7 @@ cv::Mat cloneMixedGrad(cv::Mat src, cv::Mat dest, std::set<Point> domain, cv::Ma
             q.x += translation.x;
             q.y += translation.y;
             double sourceGrad = source(p.y, p.x) - source(q.y, q.x);
+            // return the maximum of the two gradients.
             return (destinationGrad > sourceGrad)? destinationGrad: sourceGrad;
         };
         Eigen::MatrixXd x = poissonSolver.solve(dirichlet, guidance);
@@ -80,13 +81,14 @@ cv::Mat cloneMixedGrad(cv::Mat src, cv::Mat dest, std::set<Point> domain, cv::Ma
                 channel.at<double>(p->y, p->x) = x(i, 0);
             }
         }
-        channel.convertTo(outputChannels[i], CV_8UC1);
+        channel.convertTo(outputChannels[i], CV_8UC1); // convert to uint8_t
     }
     cv::Mat output;
     cv::merge(outputChannels, 3, output);
     return output;
 }
 
+// apply texture flattening
 cv::Mat flatten(cv::Mat src, std::set<Point> domain, cv::Mat domainMask) {
     cv::Mat channel;
     cv::Mat srcChannels[3], outputChannels[3];
@@ -95,11 +97,12 @@ cv::Mat flatten(cv::Mat src, std::set<Point> domain, cv::Mat domainMask) {
     cv::Mat srcEdge = cannyDetector(src);
     PoissonSolver poissonSolver{domain, Size(src.rows, src.cols), domainMask};
     poissonSolver.compute();
-    for (int i = 0; i < 3; i++) {
-        srcChannels[i].convertTo(channel, CV_64FC1);
+    for (int i = 0; i < 3; i++) { // for each channel
+        srcChannels[i].convertTo(channel, CV_64FC1); // convert to double
         cv::cv2eigen(channel, source);
         std::function<double(Point, Point)> guidance = [source, srcEdge] (Point p, Point q)->double {
             double sourceGrad = source(p.y, p.x) - source(q.y, q.x);
+            // if there is an edge return the gradient, otherwise return 0.
             return (srcEdge.at<uint8_t>(p.y, p.x) != 0 || srcEdge.at<uint8_t>(q.y, q.x) != 0)? sourceGrad: 0;
         };
         std::function<double(Point)> dirichlet = [source] (Point p)->double {
@@ -112,7 +115,7 @@ cv::Mat flatten(cv::Mat src, std::set<Point> domain, cv::Mat domainMask) {
                 channel.at<double>(p->y, p->x) = x(i, 0);
             }
         }
-        channel.convertTo(outputChannels[i], CV_8UC1);
+        channel.convertTo(outputChannels[i], CV_8UC1); // convert to uint8_t
     }
     cv::Mat output;
     cv::merge(outputChannels, 3, output);

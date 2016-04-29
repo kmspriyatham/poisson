@@ -2,9 +2,6 @@
 //  PoissonSolver.hpp
 //  poisson
 //
-//  Created by Priyatham Kattakinda on 19/04/16.
-//  Copyright © 2016 Priyatham Kattakinda. All rights reserved.
-//
 
 #ifndef PoissonSolver_hpp
 #define PoissonSolver_hpp
@@ -18,12 +15,13 @@
 
 class PoissonSolver {
 public:
-    std::set<Point> domain;
-    Size sizeImage;
-    cv::Mat domainMask;
+    std::set<Point> domain; // set of points in domain.
+    Size sizeImage; // size of the image
+    cv::Mat domainMask; // this is a matrix that has the same size as the image and
+                        // each element is the index of the point in domain(-1 if not in domain)
     Eigen::MatrixXd solve(std::function<double(Point)>, std::function<double(Point, Point)>);
     void compute();
-    PoissonSolver(std::set<Point>, Size, cv::Mat);
+    PoissonSolver(std::set<Point>, Size, cv::Mat); // constructor
 private:
     unsigned int numNeighbors(Point);
     std::set<Point> neighbors(Point);

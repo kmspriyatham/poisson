@@ -2,9 +2,6 @@
 //  Clone.hpp
 //  poisson
 //
-//  Created by Priyatham Kattakinda on 20/04/16.
-//  Copyright © 2016 Priyatham Kattakinda. All rights reserved.
-//
 
 #ifndef Clone_hpp
 #define Clone_hpp

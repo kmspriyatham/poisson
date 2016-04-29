@@ -2,9 +2,6 @@
 //  GUI.cpp
 //  poisson
 //
-//  Created by Priyatham Kattakinda on 20/04/16.
-//  Copyright © 2016 Priyatham Kattakinda. All rights reserved.
-//
 
 #include "GUI.hpp"
 #include <iostream>
@@ -34,6 +31,7 @@ void sourceOnMouseClone(int event, int x, int y, int, void*) {
     }
 }
 
+// callback to draw on destination image to select domain with an arbitrary shape.
 void destinationOnMouseClone(int event, int x, int y, int, void*) {
     if (event == cv::EVENT_LBUTTONDOWN) {
         drag = true;
@@ -45,6 +43,7 @@ void destinationOnMouseClone(int event, int x, int y, int, void*) {
         }
     }
     if (event == cv::EVENT_MOUSEMOVE && drag && sourceOrigin != Point(-1, -1)) {
+        // when user draws onto the destination image, all points in the <brushSize> neighborhood are added to the domain
         for (int i = -brushSize; i <= brushSize; i++) {
             for (int j = -brushSize; j <= brushSize; j++) {
                 Point srcPoint = Point(translation.x + x + i, translation.y + y + j);
@@ -62,6 +61,7 @@ void destinationOnMouseClone(int event, int x, int y, int, void*) {
     }
 }
 
+// callback to draw a rectangle on destination image to select a rectangular domain.
 void destinationOnMouseCloneRec(int event, int x, int y, int, void*) {
     if (event == cv::EVENT_LBUTTONDOWN) {
         if (destinationOrigin == Point(-1, -1) && sourceOrigin != Point(-1, -1)) {
@@ -104,13 +104,13 @@ std::tuple<std::set<Point>, cv::Mat, Point> imageEditor(cv::Mat source, cv::Mat 
         if (key == 'q') {
             break;
         }
-        if (key == 'r') {
+        if (key == 'r') { // draw a rectangle
             cv::setMouseCallback(destinationWindow, destinationOnMouseCloneRec);
         }
-        if (key == 'd') {
+        if (key == 'd') { // draw an arbitrary shape
             cv::setMouseCallback(destinationWindow, destinationOnMouseClone);
         }
-        if (key == 'e') {
+        if (key == 'e') { // solve the poisson equation and edit the image
             {
                 int i = 0;
                 for (std::set<Point>::iterator p = domain.begin(); p != domain.end(); p++, i++) {
@@ -155,7 +155,7 @@ void sourceOnMouseFlattenRec(int event, int x, int y, int, void*) {
             for (int j = sourceOrigin.y; j <= y; j++) {
                 Point srcPoint = Point(i, j);
                 domain.insert(srcPoint);
-                src.at<cv::Vec3b>(j, i) = cv::Vec3b(255, 255, 255);
+                src.at<cv::Vec3b>(j, i) = cv::Vec3b(255, 255, 255); // color the domain rectangle white
             }
         }
         cv::imshow(sourceWindow, src);
@@ -170,20 +170,20 @@ std::pair<std::set<Point>, cv::Mat> imageEditor(cv::Mat source) {
     cv::imshow(sourceWindow, src);
     while (true) {
         char key = cv::waitKey(0);
-        if (key == 'r') {
+        if (key == 'r') { // draw rectangle
             cv::setMouseCallback(sourceWindow, sourceOnMouseFlattenRec);
         }
-        if (key == 'd') {
+        if (key == 'd') { // draw arbitrary shape
             cv::setMouseCallback(sourceWindow, sourceOnMouseFlatten);
         }
         if (key == 'q') {
             break;
         }
-        if (key == 'e') {
+        if (key == 'e') { // solve the poisson equation and edit the image
             {
                 int i = 0;
                 for (std::set<Point>::iterator p = domain.begin(); p != domain.end(); p++, i++) {
-                    domainMask.at<int>(p->y, p->x) = i;
+                    domainMask.at<int>(p->y, p->x) = i; // set the indices of points in domain as the elements of domainMask
                 }
             }
             return std::pair<std::set<Point>, cv::Mat>(domain, domainMask);

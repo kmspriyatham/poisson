@@ -2,9 +2,6 @@
 //  main.cpp
 //  poisson
 //
-//  Created by Priyatham Kattakinda on 19/04/16.
-//  Copyright © 2016 Priyatham Kattakinda. All rights reserved.
-//
 
 #include <iostream>
 #include "GUI.hpp"
@@ -12,6 +9,7 @@
 #include <opencv2/core/eigen.hpp>
 #include <ctime>
 
+// acceptable modes, one for each method in the paper.
 #define IMPORT "import"
 #define MIXED "mixed"
 #define FLATTEN "flatten"
@@ -36,6 +34,7 @@ int main(int argc, const char * argv[]) {
             std::cout <<  "Could not open or find the image" << std::endl ;
             return -1;
         }
+        // get the domain, domainMask
         std::pair<std::set<Point>, cv::Mat> editInfo = imageEditor(src);
         std::set<Point> domain = editInfo.first;
         cv::Mat domainMask = editInfo.second;
@@ -62,6 +61,7 @@ int main(int argc, const char * argv[]) {
                 std::cout <<  "Could not open or find the image" << std::endl ;
                 return -1;
             }
+            // get the domain, domainMask, translation
             std::tuple<std::set<Point>, cv::Mat, Point> editInfo = imageEditor(src, dest);
             std::set<Point> domain = std::get<0>(editInfo);
             if (domain.size() == 0) {
